@@ -294,7 +294,23 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6
 function calcPnL(t) {
   const qty = parseInt(t.contracts)||0, open = parseFloat(t.premium)||0, close = parseFloat(t.closePrice);
   if (isNaN(close)||t.status==="Open") return null;
-  return (t.action==="Buy"?1:-1)*(close-open)*qty*100;
+
+  // If this is a Sell that closes a Buy (long exit), profit when close > open
+  // If this is a Buy that closes a short (short exit) or a standalone short, profit when close < open
+  // We detect "closing a long" by checking if there's a matching open Buy for same ticker/strike/expiry
+  if (t.action === "Sell") {
+    const hasMatchingBuy = trades.some(x =>
+      x.action === "Buy" && x.ticker === t.ticker &&
+      x.strike === t.strike && x.expiry === t.expiry
+    );
+    // Long exit: sold to close a buy position → profit = close - open
+    if (hasMatchingBuy) return (close - open) * qty * 100;
+    // Short open: sold to open → profit = open - close
+    return (open - close) * qty * 100;
+  }
+
+  // Buy trade with a close price = bought to close a short
+  return (close - open) * qty * 100;
 }
 function fmtPnL(n) {
   if (n===null||n===undefined) return "—";
