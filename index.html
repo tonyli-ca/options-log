@@ -57,7 +57,10 @@
   .chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
   .strategy-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   .strategy-pill{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 14px}
-  @media(max-width:700px){
+  input[type="date"]{color-scheme:dark;cursor:pointer}
+  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.6);cursor:pointer;padding:2px}
+  .date-wrap{position:relative}
+  .date-wrap input{padding-right:32px}
     .form-grid{grid-template-columns:1fr 1fr}
     .span3{grid-column:span 2}
     .summary-grid4{grid-template-columns:1fr 1fr}
@@ -94,11 +97,20 @@
   <div class="modal">
     <div style="font-size:15px;font-weight:700;margin-bottom:20px" id="form-title">Log New Trade</div>
     <div class="form-grid">
-      <div class="field"><label>Date</label><input type="date" id="f-date"/></div>
+      <div class="field"><label>Date</label><div class="date-wrap"><input type="date" id="f-date"/></div></div>
       <div class="field"><label>Source</label>
         <select id="f-source"><option>R</option><option>O</option><option selected>P</option></select></div>
       <div class="field"><label>Action</label>
-        <select id="f-action"><option>Buy</option><option>Sell</option></select></div>
+        <select id="f-action" onchange="onActionChange()"><option>Buy</option><option>Sell</option></select></div>
+
+      <!-- Link to open buy — only shown when Action = Sell -->
+      <div class="field span3" id="link-buy-wrap" style="display:none">
+        <label>Link to Open Buy Trade (auto-fill)</label>
+        <select id="f-link-buy" onchange="onLinkBuyChange()">
+          <option value="">— Select an open buy to auto-fill —</option>
+        </select>
+      </div>
+
       <div class="field"><label>Ticker *</label><input id="f-ticker" placeholder="NVDA" style="text-transform:uppercase"/></div>
       <div class="field span2"><label>Strategy</label>
         <select id="f-strategy">
@@ -107,14 +119,15 @@
           <option>Bull Put Spread</option><option>Bear Call Spread</option><option>Straddle</option>
           <option>Strangle</option><option>Other</option>
         </select></div>
-      <div class="field"><label>Expiry *</label><input type="date" id="f-expiry"/></div>
+      <div class="field"><label>Expiry *</label><div class="date-wrap"><input type="date" id="f-expiry"/></div></div>
       <div class="field"><label>Strike *</label><input type="number" step="0.5" id="f-strike" placeholder="150"/></div>
       <div class="field"><label>Contracts</label><input type="number" min="1" id="f-contracts" value="1"/></div>
       <div class="field"><label>Open Premium * (per share)</label><input type="number" step="0.01" id="f-premium" placeholder="2.50"/></div>
       <div class="field"><label>Close Price (per share)</label><input type="number" step="0.01" id="f-close" placeholder="—"/></div>
       <div class="field"><label>Status</label>
         <select id="f-status"><option>Open</option><option>Closed</option><option>Expired</option><option>Assigned</option></select></div>
-      <div class="field span3"><label>Notes</label><input id="f-notes" placeholder="e.g. GEX wall at 580, stop 50%"/></div>
+      <div class="field span2"><label>Notes</label><input id="f-notes" placeholder="e.g. GEX wall at 580, stop 50%"/></div>
+      <div class="field"><label>Analyst <span style="color:#444;font-weight:400;text-transform:none">(optional)</span></label><input id="f-analyst" placeholder="e.g. Nitish"/></div>
     </div>
     <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeForm()">Cancel</button>
@@ -178,6 +191,7 @@
             <th onclick="sortBy('premium')">Open <span id="sort-premium"></span></th>
             <th onclick="sortBy('closePrice')">Close <span id="sort-closePrice"></span></th>
             <th onclick="sortBy('status')">Status <span id="sort-status"></span></th>
+            <th onclick="sortBy('analyst')">Analyst <span id="sort-analyst"></span></th>
             <th style="text-align:right">P&amp;L</th>
             <th></th>
           </tr>
@@ -226,7 +240,7 @@ const SB_HEADERS = {"Content-Type":"application/json","apikey":SB_KEY,"Authoriza
 
 const SOURCE_COLORS = {R:"#f97316",O:"#a78bfa",P:"#34d399"};
 const SOURCE_BG = {R:"#431407",O:"#2e1065",P:"#064e3b"};
-const CSV_HEADERS = ["id","date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status","notes"];
+const CSV_HEADERS = ["id","date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status","notes","analyst"];
 const STRATEGIES = ["Single Call","Single Put","Covered Call","Cash-Secured Put","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Straddle","Strangle","Other"];
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -244,10 +258,10 @@ async function sbFetch(path, opts={}) {
   const t = await res.text(); return t ? JSON.parse(t) : [];
 }
 function rowToTrade(r) {
-  return {id:r.id,date:r.date,source:r.source,action:r.action,ticker:r.ticker,strategy:r.strategy,expiry:r.expiry,strike:r.strike,contracts:r.contracts,premium:r.premium,closePrice:r.close_price??'',status:r.status,notes:r.notes??''};
+  return {id:r.id,date:r.date,source:r.source,action:r.action,ticker:r.ticker,strategy:r.strategy,expiry:r.expiry,strike:r.strike,contracts:r.contracts,premium:r.premium,closePrice:r.close_price??'',status:r.status,notes:r.notes??'',analyst:r.analyst??''};
 }
 function tradeToRow(t) {
-  return {id:t.id,date:t.date,source:t.source,action:t.action,ticker:t.ticker,strategy:t.strategy,expiry:t.expiry,strike:t.strike,contracts:t.contracts,premium:t.premium,close_price:t.closePrice||null,status:t.status,notes:t.notes||null};
+  return {id:t.id,date:t.date,source:t.source,action:t.action,ticker:t.ticker,strategy:t.strategy,expiry:t.expiry,strike:t.strike,contracts:t.contracts,premium:t.premium,close_price:t.closePrice||null,status:t.status,notes:t.notes||null,analyst:t.analyst||null};
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -333,6 +347,8 @@ function openNewForm() {
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
   document.getElementById("f-source").value = "P";
   document.getElementById("f-action").value = "Buy";
+  document.getElementById("link-buy-wrap").style.display = "none";
+  document.getElementById("f-link-buy").value = "";
   document.getElementById("f-ticker").value = "";
   document.getElementById("f-strategy").value = "Single Call";
   document.getElementById("f-expiry").value = "";
@@ -342,6 +358,7 @@ function openNewForm() {
   document.getElementById("f-close").value = "";
   document.getElementById("f-status").value = "Open";
   document.getElementById("f-notes").value = "";
+  document.getElementById("f-analyst").value = "";
   document.getElementById("form-modal").style.display = "flex";
   setTimeout(()=>document.getElementById("f-ticker").focus(),100);
 }
@@ -353,6 +370,9 @@ function openEditForm(id) {
   document.getElementById("f-date").value = t.date;
   document.getElementById("f-source").value = t.source;
   document.getElementById("f-action").value = t.action;
+  document.getElementById("f-link-buy").value = "";
+  document.getElementById("link-buy-wrap").style.display = t.action === "Sell" ? "block" : "none";
+  if (t.action === "Sell") populateLinkBuyDropdown();
   document.getElementById("f-ticker").value = t.ticker;
   document.getElementById("f-strategy").value = t.strategy;
   document.getElementById("f-expiry").value = t.expiry;
@@ -362,6 +382,7 @@ function openEditForm(id) {
   document.getElementById("f-close").value = t.closePrice||"";
   document.getElementById("f-status").value = t.status;
   document.getElementById("f-notes").value = t.notes||"";
+  document.getElementById("f-analyst").value = t.analyst||"";
   document.getElementById("form-modal").style.display = "flex";
 }
 function closeForm() { document.getElementById("form-modal").style.display = "none"; }
@@ -371,14 +392,35 @@ async function submitForm() {
   const premium = document.getElementById("f-premium").value.trim();
   const expiry = document.getElementById("f-expiry").value.trim();
   const strike = document.getElementById("f-strike").value.trim();
+  const action = document.getElementById("f-action").value;
+  const contracts = parseInt(document.getElementById("f-contracts").value) || 1;
+
   if (!ticker||!premium||!expiry||!strike) { showToast("Fill in Ticker, Expiry, Strike, and Premium","error"); return; }
+
+  // ── Contract quantity warning for Sell ──
+  if (action === "Sell") {
+    // Sum all open Buy contracts for same ticker + strike + expiry
+    const heldContracts = trades
+      .filter(t => t.action === "Buy" && t.status === "Open" && t.ticker === ticker && t.strike === strike && t.expiry === expiry)
+      .reduce((sum, t) => sum + (parseInt(t.contracts) || 0), 0);
+
+    if (heldContracts === 0) {
+      // No open position at all — warn but allow override
+      if (!confirm(`⚠ No open Buy position found for ${ticker} $${strike} exp ${expiry}.\n\nYou may be opening a new short position. Continue?`)) return;
+    } else if (contracts > heldContracts) {
+      // Selling more than held — warn but allow override
+      if (!confirm(`⚠ You're trying to sell ${contracts} contract${contracts>1?"s":""}, but only ${heldContracts} open Buy contract${heldContracts>1?"s":""} found for ${ticker} $${strike} exp ${expiry}.\n\nThis would exceed your holding. Continue anyway?`)) return;
+    }
+  }
+
   const entry = {
     id: editId||uid(), date: document.getElementById("f-date").value,
-    source: document.getElementById("f-source").value, action: document.getElementById("f-action").value,
+    source: document.getElementById("f-source").value, action,
     ticker, strategy: document.getElementById("f-strategy").value, expiry, strike,
-    contracts: document.getElementById("f-contracts").value||"1", premium,
+    contracts: String(contracts), premium,
     closePrice: document.getElementById("f-close").value||"",
-    status: document.getElementById("f-status").value, notes: document.getElementById("f-notes").value
+    status: document.getElementById("f-status").value, notes: document.getElementById("f-notes").value,
+    analyst: document.getElementById("f-analyst").value.trim()
   };
   if (editId) {
     trades = trades.map(x=>x.id===editId?entry:x);
@@ -396,7 +438,46 @@ async function handleDelete(id) {
   await deleteTrade(id); render(); showToast("Trade deleted");
 }
 
-// ── Sort ──────────────────────────────────────────────────────────────────────
+// ── Link-to-buy logic ─────────────────────────────────────────────────────────
+function onActionChange() {
+  const isSell = document.getElementById("f-action").value === "Sell";
+  const wrap = document.getElementById("link-buy-wrap");
+  wrap.style.display = isSell ? "block" : "none";
+  if (isSell) populateLinkBuyDropdown();
+  else document.getElementById("f-link-buy").value = "";
+}
+
+function populateLinkBuyDropdown() {
+  const openBuys = trades.filter(t => t.action === "Buy" && t.status === "Open");
+  const sel = document.getElementById("f-link-buy");
+  sel.innerHTML = `<option value="">— Select an open buy to auto-fill —</option>`;
+  openBuys.forEach(t => {
+    const label = `${t.ticker} · ${t.strategy} · $${t.strike} · exp ${t.expiry} · ${t.contracts}x @ $${t.premium} [${t.source}]`;
+    sel.innerHTML += `<option value="${t.id}">${label}</option>`;
+  });
+  if (openBuys.length === 0) {
+    sel.innerHTML += `<option disabled>No open buy trades found</option>`;
+  }
+}
+
+function onLinkBuyChange() {
+  const id = document.getElementById("f-link-buy").value;
+  if (!id) return;
+  const t = trades.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById("f-ticker").value   = t.ticker;
+  document.getElementById("f-strategy").value = t.strategy;
+  document.getElementById("f-expiry").value   = t.expiry;
+  document.getElementById("f-strike").value   = t.strike;
+  document.getElementById("f-contracts").value = t.contracts;
+  document.getElementById("f-source").value   = t.source;
+  document.getElementById("f-premium").value  = t.premium;
+  document.getElementById("f-status").value   = "Closed";
+  // Focus close price as the only thing left to fill
+  setTimeout(() => document.getElementById("f-close").focus(), 50);
+}
+
+
 function sortBy(col) {
   if (sortCol===col) sortDir = sortDir==="asc"?"desc":"asc";
   else { sortCol=col; sortDir="desc"; }
@@ -526,7 +607,7 @@ function renderTable() {
   document.getElementById("filter-count").textContent = `${filtered.length} of ${trades.length}`;
 
   // Sort indicators
-  ["date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status"].forEach(c=>{
+  ["date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status","analyst"].forEach(c=>{
     const el = document.getElementById(`sort-${c}`);
     if (el) el.textContent = sortCol===c?(sortDir==="asc"?"↑":"↓"):"↕";
     if (el) el.style.color = sortCol===c?"#58a6ff":"#333";
@@ -552,6 +633,7 @@ function renderTable() {
       <td>$${parseFloat(t.premium).toFixed(2)}</td>
       <td>${t.closePrice?`$${parseFloat(t.closePrice).toFixed(2)}`:"—"}</td>
       <td><span style="color:${statusColor(t.status)};font-size:11px">● ${t.status}</span></td>
+      <td style="color:#8b949e;font-size:11px">${t.analyst||'—'}</td>
       <td style="text-align:right;font-weight:700;color:${pnlColor}">${fmtPnL(pnl)}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="icon-btn" onclick="openEditForm('${t.id}')" title="Edit">✎</button>
