@@ -126,8 +126,7 @@
       <div class="field"><label>Close Price (per share)</label><input type="number" step="0.01" id="f-close" placeholder="—"/></div>
       <div class="field"><label>Status</label>
         <select id="f-status"><option>Open</option><option>Closed</option><option>Expired</option><option>Assigned</option></select></div>
-      <div class="field span2"><label>Notes</label><input id="f-notes" placeholder="e.g. GEX wall at 580, stop 50%"/></div>
-      <div class="field"><label>Analyst <span style="color:#444;font-weight:400;text-transform:none">(optional)</span></label><input id="f-analyst" placeholder="e.g. Nitish"/></div>
+      <div class="field span3"><label>Notes</label><input id="f-notes" placeholder="e.g. GEX wall at 580, stop 50%"/></div>
     </div>
     <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeForm()">Cancel</button>
@@ -191,7 +190,6 @@
             <th onclick="sortBy('premium')">Open <span id="sort-premium"></span></th>
             <th onclick="sortBy('closePrice')">Close <span id="sort-closePrice"></span></th>
             <th onclick="sortBy('status')">Status <span id="sort-status"></span></th>
-            <th onclick="sortBy('analyst')">Analyst <span id="sort-analyst"></span></th>
             <th style="text-align:right">P&amp;L</th>
             <th></th>
           </tr>
@@ -240,7 +238,7 @@ const SB_HEADERS = {"Content-Type":"application/json","apikey":SB_KEY,"Authoriza
 
 const SOURCE_COLORS = {R:"#f97316",O:"#a78bfa",P:"#34d399"};
 const SOURCE_BG = {R:"#431407",O:"#2e1065",P:"#064e3b"};
-const CSV_HEADERS = ["id","date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status","notes","analyst"];
+const CSV_HEADERS = ["id","date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status","notes"];
 const STRATEGIES = ["Single Call","Single Put","Covered Call","Cash-Secured Put","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Straddle","Strangle","Other"];
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -258,10 +256,10 @@ async function sbFetch(path, opts={}) {
   const t = await res.text(); return t ? JSON.parse(t) : [];
 }
 function rowToTrade(r) {
-  return {id:r.id,date:r.date,source:r.source,action:r.action,ticker:r.ticker,strategy:r.strategy,expiry:r.expiry,strike:r.strike,contracts:r.contracts,premium:r.premium,closePrice:r.close_price??'',status:r.status,notes:r.notes??'',analyst:r.analyst??''};
+  return {id:r.id,date:r.date,source:r.source,action:r.action,ticker:r.ticker,strategy:r.strategy,expiry:r.expiry,strike:r.strike,contracts:r.contracts,premium:r.premium,closePrice:r.close_price??'',status:r.status,notes:r.notes??''};
 }
 function tradeToRow(t) {
-  return {id:t.id,date:t.date,source:t.source,action:t.action,ticker:t.ticker,strategy:t.strategy,expiry:t.expiry,strike:t.strike,contracts:t.contracts,premium:t.premium,close_price:t.closePrice||null,status:t.status,notes:t.notes||null,analyst:t.analyst||null};
+  return {id:t.id,date:t.date,source:t.source,action:t.action,ticker:t.ticker,strategy:t.strategy,expiry:t.expiry,strike:t.strike,contracts:t.contracts,premium:t.premium,close_price:t.closePrice||null,status:t.status,notes:t.notes||null};
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -374,7 +372,6 @@ function openNewForm() {
   document.getElementById("f-close").value = "";
   document.getElementById("f-status").value = "Open";
   document.getElementById("f-notes").value = "";
-  document.getElementById("f-analyst").value = "";
   document.getElementById("form-modal").style.display = "flex";
   setTimeout(()=>document.getElementById("f-ticker").focus(),100);
 }
@@ -398,7 +395,6 @@ function openEditForm(id) {
   document.getElementById("f-close").value = t.closePrice||"";
   document.getElementById("f-status").value = t.status;
   document.getElementById("f-notes").value = t.notes||"";
-  document.getElementById("f-analyst").value = t.analyst||"";
   document.getElementById("form-modal").style.display = "flex";
 }
 function closeForm() { document.getElementById("form-modal").style.display = "none"; }
@@ -435,8 +431,7 @@ async function submitForm() {
     ticker, strategy: document.getElementById("f-strategy").value, expiry, strike,
     contracts: String(contracts), premium,
     closePrice: document.getElementById("f-close").value||"",
-    status: document.getElementById("f-status").value, notes: document.getElementById("f-notes").value,
-    analyst: document.getElementById("f-analyst").value.trim()
+    status: document.getElementById("f-status").value, notes: document.getElementById("f-notes").value
   };
   if (editId) {
     trades = trades.map(x=>x.id===editId?entry:x);
@@ -623,7 +618,7 @@ function renderTable() {
   document.getElementById("filter-count").textContent = `${filtered.length} of ${trades.length}`;
 
   // Sort indicators
-  ["date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status","analyst"].forEach(c=>{
+  ["date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status"].forEach(c=>{
     const el = document.getElementById(`sort-${c}`);
     if (el) el.textContent = sortCol===c?(sortDir==="asc"?"↑":"↓"):"↕";
     if (el) el.style.color = sortCol===c?"#58a6ff":"#333";
@@ -649,7 +644,6 @@ function renderTable() {
       <td>$${parseFloat(t.premium).toFixed(2)}</td>
       <td>${t.closePrice?`$${parseFloat(t.closePrice).toFixed(2)}`:"—"}</td>
       <td><span style="color:${statusColor(t.status)};font-size:11px">● ${t.status}</span></td>
-      <td style="color:#8b949e;font-size:11px">${t.analyst||'—'}</td>
       <td style="text-align:right;font-weight:700;color:${pnlColor}">${fmtPnL(pnl)}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="icon-btn" onclick="openEditForm('${t.id}')" title="Edit">✎</button>
