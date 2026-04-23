@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>⬡ Options Log</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'JetBrains Mono','Fira Code','Courier New',monospace;background:#010409;color:#e6edf3;min-height:100vh}
+  input,select,button{font-family:inherit}
+  input,select{width:100%;background:#010409;border:1px solid #30363d;border-radius:6px;padding:8px 10px;color:#e6edf3;font-size:13px;outline:none}
+  input:focus,select:focus{border-color:#58a6ff}
+  select option{background:#0d1117}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{padding:11px;text-align:left;font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:.06em;font-weight:600;white-space:nowrap;cursor:pointer;user-select:none;background:#0a0e14}
+  th:hover{color:#e6edf3}
+  td{padding:9px 11px;vertical-align:middle;white-space:nowrap}
+  tr{border-top:1px solid #161b22}
+  tr:nth-child(even){background:#060a0f}
+  tr:hover{background:#111820!important}
+  .card{background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:20px}
+  .card-label{font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+  .btn{border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+  .btn:hover{opacity:.85}
+  .btn-green{background:#238636;color:#fff}
+  .btn-ghost{background:#161b22;color:#8b949e;border:1px solid #30363d}
+  .btn-red{background:#5a1a1a;color:#f85149;border:1px solid #f85149}
+  .tab{border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:#8b949e;border:1px solid transparent;transition:all .15s}
+  .tab.active{background:#161b22;color:#58a6ff;border-color:#30363d}
+  .period-btn{border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;background:#161b22;color:#8b949e;border:1px solid #30363d;transition:all .15s}
+  .period-btn.active{background:#1f3a5f;color:#58a6ff;border-color:#58a6ff}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+  .modal{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:28px;width:100%;max-width:660px;max-height:90vh;overflow-y:auto}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .span2{grid-column:span 2}
+  .span3{grid-column:span 3}
+  .field label{display:block;font-size:10px;font-weight:600;color:#8b949e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
+  .toast{position:fixed;top:16px;right:16px;z-index:200;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.5);letter-spacing:.03em;display:none}
+  .toast.show{display:block}
+  .toast.info{background:#0d2a1a;border:1px solid #3fb950;color:#3fb950}
+  .toast.error{background:#5a1a1a;border:1px solid #f85149;color:#f85149}
+  .error-banner{background:#5a1a1a;border:1px solid #f85149;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#f85149;display:none}
+  .badge{border-radius:4px;padding:2px 8px;font-weight:800;font-size:11px}
+  .icon-btn{background:none;border:none;color:#8b949e;cursor:pointer;padding:3px 7px;font-size:14px;border-radius:4px}
+  .icon-btn:hover{color:#e6edf3}
+  .icon-btn.del:hover{color:#f85149}
+  .stat-val{font-size:28px;font-weight:800;margin-top:8px;letter-spacing:-.01em}
+  .stat-sub{font-size:11px;color:#8b949e;margin-top:4px}
+  #header{background:#0d1117;border-bottom:1px solid #21262d;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
+  #body{max-width:1300px;margin:0 auto;padding:22px 16px}
+  #filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  #filters input,#filters select{width:auto}
+  .table-wrap{overflow-x:auto;border-radius:8px;border:1px solid #21262d}
+  .summary-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  .summary-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:80px}
+  .chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .strategy-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .strategy-pill{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 14px}
+  @media(max-width:700px){
+    .form-grid{grid-template-columns:1fr 1fr}
+    .span3{grid-column:span 2}
+    .summary-grid4{grid-template-columns:1fr 1fr}
+    .summary-grid2{grid-template-columns:1fr}
+    #header{flex-direction:column;align-items:flex-start}
+  }
+  @media(max-width:480px){
+    .form-grid{grid-template-columns:1fr}
+    .span2,.span3{grid-column:span 1}
+    .summary-grid4{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Import Modal -->
+<div class="modal-bg" id="import-modal" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px">Import trades</div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:20px" id="import-count"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-green" style="flex:1" onclick="confirmImport('merge')">Merge (skip dupes)</button>
+      <button class="btn btn-red" style="flex:1" onclick="confirmImport('replace')">Replace all</button>
+      <button class="btn btn-ghost" onclick="closeImport()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Trade Form Modal -->
+<div class="modal-bg" id="form-modal" style="display:none">
+  <div class="modal">
+    <div style="font-size:15px;font-weight:700;margin-bottom:20px" id="form-title">Log New Trade</div>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input type="date" id="f-date"/></div>
+      <div class="field"><label>Source</label>
+        <select id="f-source"><option>R</option><option>O</option><option selected>P</option></select></div>
+      <div class="field"><label>Action</label>
+        <select id="f-action"><option>Buy</option><option>Sell</option></select></div>
+      <div class="field"><label>Ticker *</label><input id="f-ticker" placeholder="NVDA" style="text-transform:uppercase"/></div>
+      <div class="field span2"><label>Strategy</label>
+        <select id="f-strategy">
+          <option>Single Call</option><option>Single Put</option><option>Covered Call</option>
+          <option>Cash-Secured Put</option><option>Bull Call Spread</option><option>Bear Put Spread</option>
+          <option>Bull Put Spread</option><option>Bear Call Spread</option><option>Straddle</option>
+          <option>Strangle</option><option>Other</option>
+        </select></div>
+      <div class="field"><label>Expiry *</label><input type="date" id="f-expiry"/></div>
+      <div class="field"><label>Strike *</label><input type="number" step="0.5" id="f-strike" placeholder="150"/></div>
+      <div class="field"><label>Contracts</label><input type="number" min="1" id="f-contracts" value="1"/></div>
+      <div class="field"><label>Open Premium * (per share)</label><input type="number" step="0.01" id="f-premium" placeholder="2.50"/></div>
+      <div class="field"><label>Close Price (per share)</label><input type="number" step="0.01" id="f-close" placeholder="—"/></div>
+      <div class="field"><label>Status</label>
+        <select id="f-status"><option>Open</option><option>Closed</option><option>Expired</option><option>Assigned</option></select></div>
+      <div class="field span3"><label>Notes</label><input id="f-notes" placeholder="e.g. GEX wall at 580, stop 50%"/></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeForm()">Cancel</button>
+      <button class="btn btn-green" onclick="submitForm()" id="form-submit-btn">Log Trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <div>
+    <div style="font-size:17px;font-weight:800;letter-spacing:.08em;color:#58a6ff">⬡ OPTIONS LOG</div>
+    <div style="font-size:11px;color:#8b949e;margin-top:2px;display:flex;gap:10px;align-items:center">
+      <span id="trade-count">0 trades · 0 open</span>
+      <span id="sync-status" style="color:#f97316">● connecting…</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button class="tab active" id="tab-log" onclick="switchTab('log')">Log</button>
+    <button class="tab" id="tab-summary" onclick="switchTab('summary')">Summary</button>
+    <button class="btn btn-ghost" style="font-size:12px;padding:7px 13px" onclick="exportCSV()">↓ CSV</button>
+    <button class="btn btn-ghost" style="font-size:12px;padding:7px 13px" onclick="document.getElementById('file-input').click()">↑ Import</button>
+    <input type="file" id="file-input" accept=".csv" style="display:none" onchange="handleFileImport(event)"/>
+    <button class="btn btn-green" onclick="openNewForm()">+ New Trade</button>
+  </div>
+</div>
+
+<!-- Body -->
+<div id="body">
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- Log Tab -->
+  <div id="tab-log-content">
+    <div id="filters">
+      <input id="filter-ticker" placeholder="Filter ticker…" style="width:130px" oninput="renderTable()"/>
+      <select id="filter-source" style="width:120px" onchange="renderTable()">
+        <option value="All">All sources</option>
+        <option>R</option><option>O</option><option>P</option>
+      </select>
+      <select id="filter-status" style="width:130px" onchange="renderTable()">
+        <option value="All">All statuses</option>
+        <option>Open</option><option>Closed</option><option>Expired</option><option>Assigned</option>
+      </select>
+      <button id="clear-filters" class="btn" style="background:none;border:none;color:#f85149;font-size:12px;display:none" onclick="clearFilters()">✕ Clear</button>
+      <span id="filter-count" style="margin-left:auto;font-size:11px;color:#8b949e"></span>
+    </div>
+    <div id="empty-state" style="text-align:center;padding:70px 20px;color:#333;font-size:13px;display:none">No trades yet. Hit + New Trade to start logging.</div>
+    <div id="no-filter-results" style="text-align:center;padding:70px 20px;color:#333;font-size:13px;display:none">No trades match your filters.</div>
+    <div class="table-wrap" id="table-wrap">
+      <table id="trades-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('date')">Date <span id="sort-date"></span></th>
+            <th onclick="sortBy('source')">Src <span id="sort-source"></span></th>
+            <th onclick="sortBy('action')">B/S <span id="sort-action"></span></th>
+            <th onclick="sortBy('ticker')">Ticker <span id="sort-ticker"></span></th>
+            <th onclick="sortBy('strategy')">Strategy <span id="sort-strategy"></span></th>
+            <th onclick="sortBy('expiry')">Expiry <span id="sort-expiry"></span></th>
+            <th onclick="sortBy('strike')">Strike <span id="sort-strike"></span></th>
+            <th onclick="sortBy('contracts')">Qty <span id="sort-contracts"></span></th>
+            <th onclick="sortBy('premium')">Open <span id="sort-premium"></span></th>
+            <th onclick="sortBy('closePrice')">Close <span id="sort-closePrice"></span></th>
+            <th onclick="sortBy('status')">Status <span id="sort-status"></span></th>
+            <th style="text-align:right">P&amp;L</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="trades-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Summary Tab -->
+  <div id="tab-summary-content" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="period-btn active" id="period-all" onclick="setPeriod('all')">All Time</button>
+      <button class="period-btn" id="period-month" onclick="setPeriod('month')">This Month</button>
+      <button class="period-btn" id="period-week" onclick="setPeriod('week')">This Week</button>
+      <button class="period-btn" id="period-day" onclick="setPeriod('day')">Today</button>
+      <span id="period-count" style="margin-left:8px;font-size:11px;color:#444;align-self:center"></span>
+    </div>
+    <div class="summary-grid4" id="kpi-grid"></div>
+    <div class="summary-grid2">
+      <div class="card" id="open-positions-card">
+        <div class="card-label">Open Positions</div>
+        <div id="open-positions-list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">P&amp;L by Source</div>
+        <div id="source-breakdown" style="margin-top:12px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">By Strategy</div>
+      <div class="strategy-pills" id="strategy-pills"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-label">Realized P&amp;L Chart</div>
+      <div style="margin-top:12px"><div class="chart-bar-wrap" id="pnl-chart"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const SB_URL = "https://qzxmitnjtybargmsyoak.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6eG1pdG5qdHliYXJnbXN5b2FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NTU0ODMsImV4cCI6MjA5MjUzMTQ4M30.At1wjdRWRNuXAa07VdhBfJvmTBdqUiyjhKa6Dyj8fCY";
+const SB_HEADERS = {"Content-Type":"application/json","apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`};
+
+const SOURCE_COLORS = {R:"#f97316",O:"#a78bfa",P:"#34d399"};
+const SOURCE_BG = {R:"#431407",O:"#2e1065",P:"#064e3b"};
+const CSV_HEADERS = ["id","date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status","notes"];
+const STRATEGIES = ["Single Call","Single Put","Covered Call","Cash-Secured Put","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Straddle","Strangle","Other"];
+
+// ── State ───────────────────────────────────────────────────────────────────
+let trades = [];
+let editId = null;
+let sortCol = "date", sortDir = "desc";
+let currentTab = "log";
+let currentPeriod = "all";
+let importBuffer = null;
+
+// ── Supabase ─────────────────────────────────────────────────────────────────
+async function sbFetch(path, opts={}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {headers:SB_HEADERS,...opts});
+  if (!res.ok) { const e = await res.text(); throw new Error(`HTTP ${res.status}: ${e}`); }
+  const t = await res.text(); return t ? JSON.parse(t) : [];
+}
+function rowToTrade(r) {
+  return {id:r.id,date:r.date,source:r.source,action:r.action,ticker:r.ticker,strategy:r.strategy,expiry:r.expiry,strike:r.strike,contracts:r.contracts,premium:r.premium,closePrice:r.close_price??'',status:r.status,notes:r.notes??''};
+}
+function tradeToRow(t) {
+  return {id:t.id,date:t.date,source:t.source,action:t.action,ticker:t.ticker,strategy:t.strategy,expiry:t.expiry,strike:t.strike,contracts:t.contracts,premium:t.premium,close_price:t.closePrice||null,status:t.status,notes:t.notes||null};
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  setSyncStatus("connecting","#f97316");
+  try {
+    const rows = await sbFetch("trades?select=*&order=date.desc,created_at.desc");
+    trades = rows.map(rowToTrade);
+    setSyncStatus("● connected","#3fb950");
+    render();
+  } catch(e) {
+    setSyncStatus("● connection failed","#f85149");
+    showBanner("Connection failed: " + e.message);
+  }
+}
+
+// ── Sync status ──────────────────────────────────────────────────────────────
+function setSyncStatus(text, color) {
+  const el = document.getElementById("sync-status");
+  el.textContent = text; el.style.color = color;
+}
+function showBanner(msg) {
+  const el = document.getElementById("error-banner");
+  el.textContent = "⚠ " + msg; el.style.display = "block";
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+function calcPnL(t) {
+  const qty = parseInt(t.contracts)||0, open = parseFloat(t.premium)||0, close = parseFloat(t.closePrice);
+  if (isNaN(close)||t.status==="Open") return null;
+  return (t.action==="Buy"?1:-1)*(close-open)*qty*100;
+}
+function fmtPnL(n) {
+  if (n===null||n===undefined) return "—";
+  return (n>=0?"+":"-")+"$"+Math.abs(n).toFixed(2);
+}
+function statusColor(s) { return {Open:"#58a6ff",Closed:"#3fb950",Expired:"#8b949e",Assigned:"#f97316"}[s]??"#e6edf3"; }
+
+let toastTimer;
+function showToast(msg, type="info") {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.className = `toast show ${type}`;
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.className="toast",3500);
+}
+
+// ── CRUD ─────────────────────────────────────────────────────────────────────
+async function insertTrade(t) {
+  setSyncStatus("● syncing…","#f97316");
+  try {
+    await sbFetch("trades",{method:"POST",body:JSON.stringify(tradeToRow(t)),headers:{...SB_HEADERS,"Prefer":"return=minimal"}});
+    setSyncStatus("● synced","#3fb950"); setTimeout(()=>setSyncStatus("● connected","#3fb950"),2000);
+  } catch(e) { setSyncStatus("● sync error","#f85149"); showToast("Sync failed: "+e.message,"error"); }
+}
+async function updateTrade(t) {
+  setSyncStatus("● syncing…","#f97316");
+  try {
+    await sbFetch(`trades?id=eq.${t.id}`,{method:"PATCH",body:JSON.stringify(tradeToRow(t)),headers:{...SB_HEADERS,"Prefer":"return=minimal"}});
+    setSyncStatus("● synced","#3fb950"); setTimeout(()=>setSyncStatus("● connected","#3fb950"),2000);
+  } catch(e) { setSyncStatus("● sync error","#f85149"); showToast("Sync failed: "+e.message,"error"); }
+}
+async function deleteTrade(id) {
+  setSyncStatus("● syncing…","#f97316");
+  try {
+    await sbFetch(`trades?id=eq.${id}`,{method:"DELETE",headers:{...SB_HEADERS,"Prefer":"return=minimal"}});
+    setSyncStatus("● synced","#3fb950"); setTimeout(()=>setSyncStatus("● connected","#3fb950"),2000);
+  } catch(e) { setSyncStatus("● sync error","#f85149"); showToast("Sync failed: "+e.message,"error"); }
+}
+async function upsertTrades(arr) {
+  setSyncStatus("● syncing…","#f97316");
+  try {
+    await sbFetch("trades",{method:"POST",body:JSON.stringify(arr.map(tradeToRow)),headers:{...SB_HEADERS,"Prefer":"resolution=merge-duplicates,return=minimal"}});
+    setSyncStatus("● synced","#3fb950"); setTimeout(()=>setSyncStatus("● connected","#3fb950"),2000);
+  } catch(e) { setSyncStatus("● sync error","#f85149"); showToast("Sync failed: "+e.message,"error"); }
+}
+
+// ── Form ──────────────────────────────────────────────────────────────────────
+function openNewForm() {
+  editId = null;
+  document.getElementById("form-title").textContent = "Log New Trade";
+  document.getElementById("form-submit-btn").textContent = "Log Trade";
+  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("f-source").value = "P";
+  document.getElementById("f-action").value = "Buy";
+  document.getElementById("f-ticker").value = "";
+  document.getElementById("f-strategy").value = "Single Call";
+  document.getElementById("f-expiry").value = "";
+  document.getElementById("f-strike").value = "";
+  document.getElementById("f-contracts").value = "1";
+  document.getElementById("f-premium").value = "";
+  document.getElementById("f-close").value = "";
+  document.getElementById("f-status").value = "Open";
+  document.getElementById("f-notes").value = "";
+  document.getElementById("form-modal").style.display = "flex";
+  setTimeout(()=>document.getElementById("f-ticker").focus(),100);
+}
+function openEditForm(id) {
+  const t = trades.find(x=>x.id===id); if(!t) return;
+  editId = id;
+  document.getElementById("form-title").textContent = "Edit Trade";
+  document.getElementById("form-submit-btn").textContent = "Update Trade";
+  document.getElementById("f-date").value = t.date;
+  document.getElementById("f-source").value = t.source;
+  document.getElementById("f-action").value = t.action;
+  document.getElementById("f-ticker").value = t.ticker;
+  document.getElementById("f-strategy").value = t.strategy;
+  document.getElementById("f-expiry").value = t.expiry;
+  document.getElementById("f-strike").value = t.strike;
+  document.getElementById("f-contracts").value = t.contracts;
+  document.getElementById("f-premium").value = t.premium;
+  document.getElementById("f-close").value = t.closePrice||"";
+  document.getElementById("f-status").value = t.status;
+  document.getElementById("f-notes").value = t.notes||"";
+  document.getElementById("form-modal").style.display = "flex";
+}
+function closeForm() { document.getElementById("form-modal").style.display = "none"; }
+
+async function submitForm() {
+  const ticker = document.getElementById("f-ticker").value.trim().toUpperCase();
+  const premium = document.getElementById("f-premium").value.trim();
+  const expiry = document.getElementById("f-expiry").value.trim();
+  const strike = document.getElementById("f-strike").value.trim();
+  if (!ticker||!premium||!expiry||!strike) { showToast("Fill in Ticker, Expiry, Strike, and Premium","error"); return; }
+  const entry = {
+    id: editId||uid(), date: document.getElementById("f-date").value,
+    source: document.getElementById("f-source").value, action: document.getElementById("f-action").value,
+    ticker, strategy: document.getElementById("f-strategy").value, expiry, strike,
+    contracts: document.getElementById("f-contracts").value||"1", premium,
+    closePrice: document.getElementById("f-close").value||"",
+    status: document.getElementById("f-status").value, notes: document.getElementById("f-notes").value
+  };
+  if (editId) {
+    trades = trades.map(x=>x.id===editId?entry:x);
+    await updateTrade(entry); showToast("Trade updated ✓");
+  } else {
+    trades = [entry,...trades];
+    await insertTrade(entry); showToast("Trade logged ✓");
+  }
+  closeForm(); render();
+}
+
+async function handleDelete(id) {
+  if (!confirm("Delete this trade? This cannot be undone.")) return;
+  trades = trades.filter(x=>x.id!==id);
+  await deleteTrade(id); render(); showToast("Trade deleted");
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  if (sortCol===col) sortDir = sortDir==="asc"?"desc":"asc";
+  else { sortCol=col; sortDir="desc"; }
+  renderTable();
+}
+function getSorted(arr) {
+  return [...arr].sort((a,b)=>{
+    let av=a[sortCol]??"", bv=b[sortCol]??"";
+    if (["premium","strike","contracts","closePrice"].includes(sortCol)) { av=parseFloat(av)||0; bv=parseFloat(bv)||0; }
+    return av<bv?(sortDir==="asc"?-1:1):av>bv?(sortDir==="asc"?1:-1):0;
+  });
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function getFiltered() {
+  const ticker = document.getElementById("filter-ticker").value.toUpperCase();
+  const source = document.getElementById("filter-source").value;
+  const status = document.getElementById("filter-status").value;
+  return trades.filter(t=>{
+    if (source!=="All"&&t.source!==source) return false;
+    if (status!=="All"&&t.status!==status) return false;
+    if (ticker&&!t.ticker.includes(ticker)) return false;
+    return true;
+  });
+}
+function clearFilters() {
+  document.getElementById("filter-ticker").value="";
+  document.getElementById("filter-source").value="All";
+  document.getElementById("filter-status").value="All";
+  renderTable();
+}
+
+// ── CSV ───────────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const esc = v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const csv = [CSV_HEADERS.join(","),...trades.map(t=>CSV_HEADERS.map(h=>esc(t[h]??"")).join(","))].join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = `options_log_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); showToast(`Exported ${trades.length} trades`);
+}
+function handleFileImport(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const lines = ev.target.result.trim().split(/\r?\n/);
+      const headers = lines[0].split(",").map(h=>h.replace(/^"|"$/g,"").trim());
+      importBuffer = lines.slice(1).map(line=>{
+        const vals=[]; let cur="",inQ=false;
+        for (const ch of line) {
+          if (ch==='"'){inQ=!inQ;continue;}
+          if (ch===","&&!inQ){vals.push(cur);cur="";continue;}
+          cur+=ch;
+        }
+        vals.push(cur);
+        const obj={}; headers.forEach((h,i)=>obj[h]=vals[i]??"");
+        if (!obj.id) obj.id=uid(); return obj;
+      });
+      document.getElementById("import-count").textContent = `${importBuffer.length} trades found in file`;
+      document.getElementById("import-modal").style.display = "flex";
+    } catch { showToast("Could not parse CSV","error"); }
+  };
+  reader.readAsText(file); e.target.value="";
+}
+async function confirmImport(mode) {
+  if (!importBuffer) return;
+  let next;
+  if (mode==="replace") {
+    try { await sbFetch("trades?id=neq.NONE",{method:"DELETE",headers:{...SB_HEADERS,"Prefer":"return=minimal"}}); } catch {}
+    next = importBuffer;
+  } else {
+    const existing = new Set(trades.map(t=>t.id));
+    next = [...trades,...importBuffer.filter(t=>!existing.has(t.id))];
+  }
+  trades = next;
+  await upsertTrades(importBuffer);
+  closeImport(); render(); showToast(`Imported ${importBuffer.length} trades (${mode})`);
+}
+function closeImport() { document.getElementById("import-modal").style.display="none"; importBuffer=null; }
+
+// ── Period ────────────────────────────────────────────────────────────────────
+function setPeriod(p) {
+  currentPeriod = p;
+  ["all","month","week","day"].forEach(x=>{
+    document.getElementById(`period-${x}`).classList.toggle("active",x===p);
+  });
+  renderSummary();
+}
+function getPeriodTrades() {
+  const now = new Date();
+  let start = null;
+  if (currentPeriod==="day") { start=new Date(now); start.setHours(0,0,0,0); }
+  else if (currentPeriod==="week") { start=new Date(now); start.setDate(now.getDate()-now.getDay()); start.setHours(0,0,0,0); }
+  else if (currentPeriod==="month") { start=new Date(now.getFullYear(),now.getMonth(),1); }
+  return start ? trades.filter(t=>t.date&&new Date(t.date)>=start) : trades;
+}
+
+// ── Tab ───────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById("tab-log-content").style.display = tab==="log"?"block":"none";
+  document.getElementById("tab-summary-content").style.display = tab==="summary"?"block":"none";
+  document.getElementById("tab-log").classList.toggle("active",tab==="log");
+  document.getElementById("tab-summary").classList.toggle("active",tab==="summary");
+  if (tab==="summary") renderSummary();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  // Header counts
+  const open = trades.filter(t=>t.status==="Open").length;
+  document.getElementById("trade-count").textContent = `${trades.length} trades · ${open} open`;
+  renderTable();
+  if (currentTab==="summary") renderSummary();
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const sorted = getSorted(filtered);
+  const ticker = document.getElementById("filter-ticker").value;
+  const source = document.getElementById("filter-source").value;
+  const status = document.getElementById("filter-status").value;
+  const hasFilter = ticker||source!=="All"||status!=="All";
+
+  document.getElementById("clear-filters").style.display = hasFilter?"inline-block":"none";
+  document.getElementById("filter-count").textContent = `${filtered.length} of ${trades.length}`;
+
+  // Sort indicators
+  ["date","source","action","ticker","strategy","expiry","strike","contracts","premium","closePrice","status"].forEach(c=>{
+    const el = document.getElementById(`sort-${c}`);
+    if (el) el.textContent = sortCol===c?(sortDir==="asc"?"↑":"↓"):"↕";
+    if (el) el.style.color = sortCol===c?"#58a6ff":"#333";
+  });
+
+  document.getElementById("empty-state").style.display = trades.length===0?"block":"none";
+  document.getElementById("no-filter-results").style.display = trades.length>0&&filtered.length===0?"block":"none";
+  document.getElementById("table-wrap").style.display = filtered.length>0?"block":"none";
+
+  const tbody = document.getElementById("trades-tbody");
+  tbody.innerHTML = sorted.map((t,i)=>{
+    const pnl = calcPnL(t);
+    const pnlColor = pnl===null?"#444":pnl>=0?"#3fb950":"#f85149";
+    return `<tr>
+      <td>${t.date}</td>
+      <td><span class="badge" style="background:${SOURCE_BG[t.source]};color:${SOURCE_COLORS[t.source]}">${t.source}</span></td>
+      <td><span style="color:${t.action==="Buy"?"#3fb950":"#f85149"};font-weight:700">${t.action==="Buy"?"B":"S"}</span></td>
+      <td style="font-weight:800;color:#58a6ff">${t.ticker}</td>
+      <td style="color:#8b949e;max-width:130px;overflow:hidden;text-overflow:ellipsis">${t.strategy}</td>
+      <td>${t.expiry}</td>
+      <td>$${parseFloat(t.strike).toFixed(1)}</td>
+      <td>${t.contracts}</td>
+      <td>$${parseFloat(t.premium).toFixed(2)}</td>
+      <td>${t.closePrice?`$${parseFloat(t.closePrice).toFixed(2)}`:"—"}</td>
+      <td><span style="color:${statusColor(t.status)};font-size:11px">● ${t.status}</span></td>
+      <td style="text-align:right;font-weight:700;color:${pnlColor}">${fmtPnL(pnl)}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="icon-btn" onclick="openEditForm('${t.id}')" title="Edit">✎</button>
+        <button class="icon-btn del" onclick="handleDelete('${t.id}')" title="Delete">✕</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function renderSummary() {
+  const pt = getPeriodTrades();
+  const closed = pt.filter(t=>t.status!=="Open");
+  const totalPnL = closed.reduce((a,t)=>a+(calcPnL(t)??0),0);
+  const winners = closed.filter(t=>(calcPnL(t)??0)>0).length;
+  const winRate = closed.length?Math.round(winners/closed.length*100):0;
+  const avgPnL = closed.length?totalPnL/closed.length:null;
+
+  document.getElementById("period-count").textContent = `${pt.length} trades in period`;
+
+  // Top ticker
+  const map={};
+  for (const t of closed) { map[t.ticker]=(map[t.ticker]||0)+(calcPnL(t)??0); }
+  const topTicker = Object.entries(map).sort((a,b)=>b[1]-a[1])[0]??null;
+
+  // KPIs
+  document.getElementById("kpi-grid").innerHTML = [
+    {label:"Total Realized P&L",val:fmtPnL(totalPnL),color:totalPnL>=0?"#3fb950":"#f85149",sub:""},
+    {label:"Win Rate",val:closed.length?`${winRate}%`:"—",color:"#58a6ff",sub:`${winners}W / ${closed.length-winners}L`},
+    {label:"Avg P&L / Trade",val:avgPnL!==null?fmtPnL(avgPnL):"—",color:avgPnL!==null&&avgPnL>=0?"#3fb950":"#f85149",sub:""},
+    {label:"Best Ticker",val:topTicker?topTicker[0]:"—",color:"#f97316",sub:topTicker?fmtPnL(topTicker[1]):""},
+  ].map(k=>`<div class="card"><div class="card-label">${k.label}</div><div class="stat-val" style="color:${k.color}">${k.val}</div>${k.sub?`<div class="stat-sub">${k.sub}</div>`:""}</div>`).join("");
+
+  // Open positions
+  const openTrades = trades.filter(t=>t.status==="Open");
+  document.getElementById("open-positions-list").innerHTML = openTrades.length===0
+    ? `<div style="color:#444;font-size:12px">No open positions</div>`
+    : openTrades.map(t=>`<div style="display:flex;align-items:center;gap:8px;font-size:12px;flex-wrap:wrap">
+        <span class="badge" style="background:${SOURCE_BG[t.source]};color:${SOURCE_COLORS[t.source]};font-size:10px">${t.source}</span>
+        <span style="color:#58a6ff;font-weight:700">${t.ticker}</span>
+        <span style="color:#8b949e">${t.strategy}</span>
+        <span style="color:#8b949e">$${t.strike} · ${t.expiry}</span>
+        <span style="margin-left:auto;color:#e6edf3">$${t.premium} × ${t.contracts}</span>
+      </div>`).join("");
+
+  // By source
+  document.getElementById("source-breakdown").innerHTML = ["R","O","P"].map(s=>{
+    const st = pt.filter(t=>t.source===s);
+    const cl = st.filter(t=>t.status!=="Open");
+    const pnl = cl.reduce((a,t)=>a+(calcPnL(t)??0),0);
+    return `<div style="display:flex;align-items:center;gap:10px">
+      <span class="badge" style="background:${SOURCE_BG[s]};color:${SOURCE_COLORS[s]};font-size:12px;min-width:28px;text-align:center">${s}</span>
+      <div style="flex:1">
+        <div style="font-size:11px;color:#8b949e">${st.length} trades · ${st.filter(t=>t.status==="Open").length} open</div>
+        <div style="font-size:16px;font-weight:800;color:${pnl>=0?"#3fb950":"#f85149"}">${fmtPnL(pnl)}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Strategies
+  document.getElementById("strategy-pills").innerHTML = STRATEGIES.map(s=>{
+    const st = pt.filter(t=>t.strategy===s);
+    if (!st.length) return "";
+    const cl = st.filter(t=>t.status!=="Open");
+    const pnl = cl.reduce((a,t)=>a+(calcPnL(t)??0),0);
+    return `<div class="strategy-pill">
+      <div style="font-size:11px;color:#8b949e">${s}</div>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <span style="font-size:13px;font-weight:700;color:#58a6ff">${st.length} trades</span>
+        ${cl.length?`<span style="font-size:13px;font-weight:700;color:${pnl>=0?"#3fb950":"#f85149"}">${fmtPnL(pnl)}</span>`:""}
+      </div>
+    </div>`;
+  }).join("");
+
+  // Chart
+  const grouped={};
+  for (const t of closed) {
+    const key = (currentPeriod==="day"||currentPeriod==="week")?t.date?.slice(0,10)??"?":t.date?.slice(0,7)??"?";
+    grouped[key]=(grouped[key]||0)+(calcPnL(t)??0);
+  }
+  const entries = Object.entries(grouped).sort((a,b)=>a[0]<b[0]?-1:1).slice(-12);
+  const max = Math.max(...entries.map(([,v])=>Math.abs(v)),1);
+  const fmtLabel = k=>(currentPeriod==="day"||currentPeriod==="week")?k.slice(5):k.slice(5)+"/"+k.slice(2,4);
+  document.getElementById("pnl-chart").innerHTML = entries.length===0
+    ? `<div style="color:#444;font-size:12px">No closed trades in this period.</div>`
+    : entries.map(([key,pnl])=>{
+        const h = Math.max(4,Math.abs(pnl)/max*70);
+        return `<div class="chart-bar-col">
+          <div style="font-size:10px;color:${pnl>=0?"#3fb950":"#f85149"};font-weight:700">${pnl>=0?"+":"-"}$${Math.abs(pnl).toFixed(0)}</div>
+          <div style="width:100%;height:${h}px;background:${pnl>=0?"#238636":"#5a1a1a"};border-radius:3px 3px 0 0;border:1px solid ${pnl>=0?"#3fb950":"#f85149"}"></div>
+          <div style="font-size:9px;color:#8b949e">${fmtLabel(key)}</div>
+        </div>`;
+      }).join("");
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
