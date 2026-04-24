@@ -440,7 +440,36 @@ async function submitForm() {
     await updateTrade(entry); showToast("Trade updated ✓");
   } else {
     trades = [entry,...trades];
-    await insertTrade(entry); showToast("Trade logged ✓");
+    await insertTrade(entry);
+
+    // ── Auto-close Buy rows if fully sold ──
+    if (action === "Sell") {
+      const matchingBuys = trades.filter(t =>
+        t.action === "Buy" && t.ticker === ticker &&
+        t.strike === strike && t.expiry === expiry
+      );
+      const totalBought = matchingBuys.reduce((s,t) => s+(parseInt(t.contracts)||0), 0);
+      const totalSold   = trades.filter(t =>
+        t.action === "Sell" && t.ticker === ticker &&
+        t.strike === strike && t.expiry === expiry
+      ).reduce((s,t) => s+(parseInt(t.contracts)||0), 0);
+
+      if (totalSold >= totalBought) {
+        // Mark all matching open Buy rows as Closed
+        const toClose = matchingBuys.filter(t => t.status === "Open");
+        for (const b of toClose) {
+          const updated = { ...b, status: "Closed" };
+          trades = trades.map(x => x.id === b.id ? updated : x);
+          await updateTrade(updated);
+        }
+        if (toClose.length > 0) showToast("Trade logged ✓ · Buy position auto-closed");
+        else showToast("Trade logged ✓");
+      } else {
+        showToast("Trade logged ✓");
+      }
+    } else {
+      showToast("Trade logged ✓");
+    }
   }
   closeForm(); render();
 }
