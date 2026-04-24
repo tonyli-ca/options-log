@@ -122,8 +122,8 @@
       <div class="field"><label>Expiry *</label><div class="date-wrap"><input type="date" id="f-expiry"/></div></div>
       <div class="field"><label>Strike *</label><input type="number" step="0.5" id="f-strike" placeholder="150"/></div>
       <div class="field"><label>Contracts</label><input type="number" min="1" id="f-contracts" value="1"/></div>
-      <div class="field"><label>Open Premium * (per share)</label><input type="number" step="0.01" id="f-premium" placeholder="2.50"/></div>
-      <div class="field"><label>Close Price (per share)</label><input type="number" step="0.01" id="f-close" placeholder="—"/></div>
+      <div class="field"><label id="f-premium-label">Open Premium * (per share)</label><input type="number" step="0.01" id="f-premium" placeholder="2.50"/></div>
+      <div class="field"><label id="f-close-label">Close Price (per share)</label><input type="number" step="0.01" id="f-close" placeholder="—"/></div>
       <div class="field"><label>Status</label>
         <select id="f-status"><option>Open</option><option>Closed</option><option>Expired</option><option>Assigned</option></select></div>
       <div class="field span3"><label>Notes</label><input id="f-notes" placeholder="e.g. GEX wall at 580, stop 50%"/></div>
@@ -368,6 +368,8 @@ function openNewForm() {
   document.getElementById("f-expiry").value = "";
   document.getElementById("f-strike").value = "";
   document.getElementById("f-contracts").value = "1";
+  document.getElementById("f-premium-label").textContent = "Open Premium * (per share)";
+  document.getElementById("f-close-label").textContent   = "Close Price (per share)";
   document.getElementById("f-premium").value = "";
   document.getElementById("f-close").value = "";
   document.getElementById("f-status").value = "Open";
@@ -454,8 +456,15 @@ function onActionChange() {
   const isSell = document.getElementById("f-action").value === "Sell";
   const wrap = document.getElementById("link-buy-wrap");
   wrap.style.display = isSell ? "block" : "none";
-  if (isSell) populateLinkBuyDropdown();
-  else document.getElementById("f-link-buy").value = "";
+  if (isSell) {
+    populateLinkBuyDropdown();
+    document.getElementById("f-close-label").textContent   = "Sell Price (per share)";
+    document.getElementById("f-premium-label").textContent = "Buy Cost Basis (per share)";
+  } else {
+    document.getElementById("f-link-buy").value = "";
+    document.getElementById("f-close-label").textContent   = "Close Price (per share)";
+    document.getElementById("f-premium-label").textContent = "Open Premium * (per share)";
+  }
 }
 
 function populateLinkBuyDropdown() {
@@ -476,15 +485,17 @@ function onLinkBuyChange() {
   if (!id) return;
   const t = trades.find(x => x.id === id);
   if (!t) return;
-  document.getElementById("f-ticker").value   = t.ticker;
-  document.getElementById("f-strategy").value = t.strategy;
-  document.getElementById("f-expiry").value   = t.expiry;
-  document.getElementById("f-strike").value   = t.strike;
+  document.getElementById("f-ticker").value    = t.ticker;
+  document.getElementById("f-strategy").value  = t.strategy;
+  document.getElementById("f-expiry").value    = t.expiry;
+  document.getElementById("f-strike").value    = t.strike;
   document.getElementById("f-contracts").value = t.contracts;
-  document.getElementById("f-source").value   = t.source;
-  document.getElementById("f-premium").value  = t.premium;
-  document.getElementById("f-status").value   = "Closed";
-  // Focus close price as the only thing left to fill
+  document.getElementById("f-source").value    = t.source;
+  document.getElementById("f-premium").value   = t.premium; // buy cost basis
+  document.getElementById("f-close").value     = "";         // user enters sell price here
+  document.getElementById("f-status").value    = "Closed";
+  document.getElementById("f-close-label").textContent   = "Sell Price * (per share)";
+  document.getElementById("f-premium-label").textContent = "Buy Cost Basis (per share)";
   setTimeout(() => document.getElementById("f-close").focus(), 50);
 }
 
